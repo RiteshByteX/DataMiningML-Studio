@@ -1,0 +1,270 @@
+{% extends 'base.html' %}
+
+{% block title %}Model Training & Evaluation - DataMining ML Studio{% endblock %}
+
+{% block content %}
+<!-- Preprocessing Summary Banner -->
+<div class="card p-4 mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #fff;">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+            <span class="badge bg-success px-3 py-1 mb-2 fw-bold"><i class="bi bi-check2-all"></i> Data Mining Preprocessing Complete</span>
+            <h3 class="fw-bold text-white mb-1">Model Training & Evaluation Results</h3>
+            <p class="text-white-50 mb-0">
+                Target: <strong>{{ target_col }}</strong> &nbsp;|&nbsp;
+                Problem: <span class="badge bg-light text-dark fw-bold text-uppercase">{{ problem_type }}</span> &nbsp;|&nbsp;
+                Scaling: <code>{{ scaling_method|upper }}</code> &nbsp;|&nbsp;
+                Train Samples: <strong>{{ train_results.train_samples }}</strong> &nbsp;|&nbsp;
+                Test Samples: <strong>{{ train_results.test_samples }}</strong>
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'download_processed' %}" class="btn btn-outline-light btn-sm">
+                <i class="bi bi-download me-1"></i> Download Preprocessed CSV
+            </a>
+            <a href="{% url 'predict' %}" class="btn btn-primary fw-bold px-4 py-2 shadow">
+                <i class="bi bi-lightning-charge-fill me-1"></i> Go to Live Prediction ➔
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Preprocessing Impact Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card">
+            <div class="stat-icon stat-icon-green"><i class="bi bi-intersect"></i></div>
+            <div>
+                <div class="stat-value">{{ prep_meta.duplicates_removed }}</div>
+                <div class="stat-label">Duplicates Removed</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card">
+            <div class="stat-icon stat-icon-blue"><i class="bi bi-bandaid-fill"></i></div>
+            <div>
+                <div class="stat-value">{{ prep_meta.imputation_log|length }}</div>
+                <div class="stat-label">Columns Imputed</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card">
+            <div class="stat-icon stat-icon-amber"><i class="bi bi-scissors"></i></div>
+            <div>
+                <div class="stat-value">{{ prep_meta.outlier_report|length }}</div>
+                <div class="stat-label">Numeric Features Capped (IQR)</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card">
+            <div class="stat-icon stat-icon-purple"><i class="bi bi-check2-square"></i></div>
+            <div>
+                <div class="stat-value">{{ prep_meta.selected_features|length }}</div>
+                <div class="stat-label">Features Selected</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Models Leaderboard Card -->
+<div class="card p-4 shadow-sm mb-4 border-success border-2">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="fw-bold mb-1 text-dark">
+                <i class="bi bi-trophy-fill text-warning me-2"></i> Machine Learning Model Leaderboard
+            </h4>
+            <p class="text-muted small mb-0">Trained on 80% split and independently validated on 20% unseen test data.</p>
+        </div>
+        <div class="badge bg-success-subtle text-success p-2 px-3 fs-6">
+            <i class="bi bi-award-fill me-1"></i> Winner: <strong>{{ best_model_name }}</strong>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 25%;">Model Name</th>
+                    {% if problem_type == 'regression' %}
+                        <th>R² Score (Higher is better)</th>
+                        <th>RMSE (Lower is better)</th>
+                        <th>MAE (Lower is better)</th>
+                        <th>MSE</th>
+                    {% else %}
+                        <th>Accuracy (Higher is better)</th>
+                        <th>Precision</th>
+                        <th>Recall</th>
+                        <th>F1-Score</th>
+                    {% endif %}
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for model_name, metrics in models_comparison.items %}
+                <tr class="{% if model_name == best_model_name %}table-success fw-bold{% endif %}">
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            {% if model_name == best_model_name %}
+                                <i class="bi bi-trophy-fill text-warning fs-5"></i>
+                            {% else %}
+                                <i class="bi bi-cpu text-secondary fs-5"></i>
+                            {% endif %}
+                            <span>{{ model_name }}</span>
+                        </div>
+                    </td>
+                    {% if problem_type == 'regression' %}
+                        <td>
+                            <span class="badge {% if metrics.R2_Score > 0.7 %}bg-success{% elif metrics.R2_Score > 0.4 %}bg-info text-dark{% else %}bg-warning text-dark{% endif %} fs-6 px-3 py-1">
+                                {{ metrics.R2_Score }}
+                            </span>
+                        </td>
+                        <td><code>{{ metrics.RMSE }}</code></td>
+                        <td><code>{{ metrics.MAE }}</code></td>
+                        <td><small class="text-muted">{{ metrics.MSE }}</small></td>
+                    {% else %}
+                        <td>
+                            <span class="badge {% if metrics.Accuracy > 0.8 %}bg-success{% elif metrics.Accuracy > 0.6 %}bg-info text-dark{% else %}bg-warning text-dark{% endif %} fs-6 px-3 py-1">
+                                {{ metrics.Accuracy }}
+                            </span>
+                        </td>
+                        <td><code>{{ metrics.Precision }}</code></td>
+                        <td><code>{{ metrics.Recall }}</code></td>
+                        <td><code>{{ metrics.F1_Score }}</code></td>
+                    {% endif %}
+                    <td>
+                        {% if model_name == best_model_name %}
+                            <span class="badge bg-success"><i class="bi bi-check-lg"></i> Selected for Prediction</span>
+                        {% else %}
+                            <span class="badge bg-secondary-subtle text-secondary">Evaluated</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Evaluation Charts Row -->
+<div class="row g-4 mb-4">
+    <!-- Chart 1: Feature Importance -->
+    <div class="col-lg-6">
+        <div class="card h-100 p-3 shadow-sm">
+            <div class="d-flex justify-content-between align-items-center mb-2 px-2">
+                <h6 class="fw-bold text-dark mb-0">
+                    <i class="bi bi-bar-chart-steps text-primary me-1"></i> Top Feature Importances
+                </h6>
+                <span class="badge bg-primary-subtle text-primary">{{ best_model_name }}</span>
+            </div>
+            <div class="chart-img-container">
+                {% if eval_charts.feature_importance %}
+                    <img src="{{ eval_charts.feature_importance }}" alt="Feature Importance">
+                {% else %}
+                    <div class="p-5 text-muted">Feature importance not available for linear models.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart 2: Model Performance Diagnostic -->
+    <div class="col-lg-6">
+        <div class="card h-100 p-3 shadow-sm">
+            <div class="d-flex justify-content-between align-items-center mb-2 px-2">
+                <h6 class="fw-bold text-dark mb-0">
+                    <i class="bi bi-graph-up text-primary me-1"></i>
+                    {% if problem_type == 'regression' %}Actual vs Predicted & Residuals{% else %}Confusion Matrix{% endif %}
+                </h6>
+                <span class="badge bg-secondary-subtle text-secondary">Test Set Diagnostic</span>
+            </div>
+            <div class="chart-img-container">
+                {% if eval_charts.diagnostics %}
+                    <img src="{{ eval_charts.diagnostics }}" alt="Diagnostics">
+                {% else %}
+                    <div class="p-5 text-muted">Diagnostics chart not generated.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Preprocessing & Outlier Audit Accordion -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header-custom d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-shield-check text-primary me-2"></i> Data Mining Preprocessing Audit Details</span>
+        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#auditDetails">
+            Toggle Details
+        </button>
+    </div>
+    <div class="collapse show" id="auditDetails">
+        <div class="card-body p-4">
+            <div class="row g-4">
+                <!-- Outlier Treatment Report -->
+                <div class="col-lg-6">
+                    <h6 class="fw-bold text-dark mb-2"><i class="bi bi-arrows-collapse text-warning me-1"></i> Outlier Treatment Report (IQR Method)</h6>
+                    <div class="table-responsive" style="max-height: 260px;">
+                        <table class="table table-sm table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Feature</th>
+                                    <th>Outliers Found</th>
+                                    <th>Lower Bound</th>
+                                    <th>Upper Bound</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for r in prep_meta.outlier_report %}
+                                <tr>
+                                    <td class="font-monospace">{{ r.column }}</td>
+                                    <td>
+                                        {% if r.outliers_count > 0 %}
+                                            <span class="badge bg-warning text-dark">{{ r.outliers_count }}</span>
+                                        {% else %}
+                                            <span class="badge bg-light text-muted">0</span>
+                                        {% endif %}
+                                    </td>
+                                    <td><code>{{ r.lower_bound }}</code></td>
+                                    <td><code>{{ r.upper_bound }}</code></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Feature Selection Summary -->
+                <div class="col-lg-6">
+                    <h6 class="fw-bold text-dark mb-2"><i class="bi bi-funnel-fill text-info me-1"></i> Feature Selection Summary</h6>
+                    <p class="text-muted small mb-2">Features retained based on statistical correlation with the target variable:</p>
+                    <div class="mb-3">
+                        <strong class="small text-success d-block mb-1">Selected Features ({{ prep_meta.selected_features|length }}):</strong>
+                        <div class="d-flex flex-wrap gap-1">
+                            {% for f in prep_meta.selected_features %}
+                                <span class="badge bg-success-subtle text-success font-monospace px-2 py-1">{{ f }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% if prep_meta.dropped_features %}
+                    <div>
+                        <strong class="small text-muted d-block mb-1">Filtered / Noisy Features ({{ prep_meta.dropped_features|length }}):</strong>
+                        <div class="d-flex flex-wrap gap-1">
+                            {% for f in prep_meta.dropped_features %}
+                                <span class="badge bg-light text-muted font-monospace px-2 py-1">{{ f }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bottom Next Step CTA -->
+<div class="text-center my-4">
+    <a href="{% url 'predict' %}" class="btn btn-primary btn-lg px-5 py-3 fw-bold shadow">
+        <i class="bi bi-lightning-charge-fill me-2"></i> Launch Real-Time Prediction Studio ➔
+    </a>
+</div>
+{% endblock %}

@@ -1,0 +1,243 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block title %}Real-Time Prediction Studio - DataMining ML Studio{% endblock %}
+
+{% block content %}
+<!-- Prediction Result Banner (if result exists) -->
+{% if prediction_result %}
+<div class="prediction-banner mb-4">
+    <div class="row align-items-center g-4">
+        <!-- Visual Gauge / Score Circle -->
+        <div class="col-md-4 text-center border-end border-secondary border-opacity-25">
+            <div class="text-white-50 text-uppercase small fw-bold mb-2">Model Prediction Output</div>
+            {% if prediction_result.credit_band %}
+                <div class="credit-gauge-circle {{ prediction_result.credit_band|lower }}">
+                    <span class="fs-1 fw-bolder">{{ prediction_result.predicted_value|floatformat:0 }}</span>
+                    <span class="small text-white-50">Credit Score</span>
+                </div>
+                <div class="mt-3">
+                    <span class="badge bg-{{ prediction_result.badge_class }} fs-6 px-3 py-2">
+                        Risk Band: {{ prediction_result.credit_band }}
+                    </span>
+                </div>
+            {% elif prediction_result.predicted_class %}
+                <div class="p-4 rounded-3 bg-white bg-opacity-10">
+                    <span class="fs-2 fw-bold text-white">{{ prediction_result.predicted_class }}</span>
+                    <div class="text-white-50 small mt-1">Predicted Class</div>
+                    {% if prediction_result.confidence %}
+                        <div class="mt-2">
+                            <span class="badge bg-success px-3 py-1">Confidence: {{ prediction_result.confidence }}%</span>
+                        </div>
+                    {% endif %}
+                </div>
+            {% else %}
+                <div class="p-4 rounded-3 bg-white bg-opacity-10">
+                    <span class="fs-1 fw-bolder text-white">{{ prediction_result.predicted_value }}</span>
+                    <div class="text-white-50 small mt-1">Predicted {{ target_col }}</div>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Evaluation & Decision Details -->
+        <div class="col-md-8">
+            {% if prediction_result.credit_band %}
+                <h4 class="fw-bold mb-2 d-flex align-items-center gap-2">
+                    <i class="bi {{ prediction_result.icon }} fs-3"></i>
+                    <span>Financial Credibility & Loan Recommendation</span>
+                </h4>
+                <div class="p-3 rounded-3 bg-white bg-opacity-10 border border-white border-opacity-10 mb-3">
+                    <div class="fs-5 fw-semibold text-white mb-1">{{ prediction_result.decision }}</div>
+                    <p class="text-white-50 small mb-0">
+                        Based on stability of income, obligation-to-income ratio, take-home salary, bounce counts, and active loans profile.
+                    </p>
+                </div>
+                <div class="row g-2 text-white-50 small">
+                    <div class="col-sm-6">
+                        <i class="bi bi-shield-check text-success me-1"></i> <strong>Model:</strong> Trained Ensemble Pipeline
+                    </div>
+                    <div class="col-sm-6">
+                        <i class="bi bi-sliders text-info me-1"></i> <strong>Scale Standard:</strong> Normalized & Winsorized
+                    </div>
+                </div>
+            {% else %}
+                <h4 class="fw-bold mb-2">Prediction Analysis for {{ target_col }}</h4>
+                <div class="p-3 rounded-3 bg-white bg-opacity-10 border border-white border-opacity-10 mb-2">
+                    <div class="fs-5 text-white">
+                        Computed Result: <strong>{{ prediction_result.predicted_value|default:prediction_result.predicted_class }}</strong>
+                    </div>
+                </div>
+                <p class="text-white-50 small mb-0">Calculated via best-fit ML model trained on {{ dataset_name }}.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Real-Time Interactive Form Card -->
+<div class="card p-4 shadow-sm mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-3 border-bottom">
+        <div>
+            <h4 class="fw-bold text-dark mb-1">
+                <i class="bi bi-input-cursor-text text-primary me-2"></i> Real-Time Prediction Form
+            </h4>
+            <p class="text-muted small mb-0">
+                Enter feature values below to generate real-time inferences. Values are automatically preprocessed, encoded, and scaled.
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary btn-sm fw-semibold" onclick="fillMedianValues()">
+                <i class="bi bi-magic me-1"></i> Auto-Fill Typical / Median Values
+            </button>
+            <a href="{% url 'train' %}" class="btn btn-outline-primary btn-sm fw-semibold">
+                <i class="bi bi-arrow-left me-1"></i> Back to Model Training
+            </a>
+        </div>
+    </div>
+
+    <form method="POST" action="{% url 'predict' %}" id="predictionForm">
+        {% csrf_token %}
+        <div class="row g-3">
+            {% for feat in selected_features %}
+                {% with meta=feature_meta|dict_get:feat %}
+                <div class="col-lg-4 col-md-6">
+                    <div class="form-group p-2 rounded bg-light border">
+                        <label class="form-label fw-bold text-dark small mb-1 text-truncate w-100" title="{{ feat }}">
+                            {{ feat|title_format }}
+                        </label>
+                        
+                        {% if meta.is_categorical %}
+                            <!-- Categorical Feature Dropdown -->
+                            <select name="{{ feat }}" class="form-select form-select-sm fw-semibold" id="input_{{ feat }}">
+                                {% for opt in meta.options %}
+                                    <option value="{{ opt }}" {% if input_values|dict_get:feat == opt %}selected{% endif %}>
+                                        {{ opt }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        {% else %}
+                            <!-- Numerical Feature Input -->
+                            <input type="number" step="any" name="{{ feat }}" id="input_{{ feat }}" 
+                                   value="{{ input_values|dict_get:feat|default:meta.default }}" 
+                                   class="form-control form-control-sm font-monospace fw-semibold" 
+                                   placeholder="{{ meta.default }}" required>
+                            <div class="d-flex justify-content-between text-muted" style="font-size: 0.72rem;">
+                                <span>Min: {{ meta.min }}</span>
+                                <span>Median: {{ meta.default }}</span>
+                                <span>Max: {{ meta.max }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endwith %}
+            {% endfor %}
+        </div>
+
+        <div class="d-flex justify-content-end gap-3 mt-4 pt-3 border-top">
+            <button type="reset" class="btn btn-light px-4">Reset</button>
+            <button type="submit" class="btn btn-primary px-5 py-2 fw-bold shadow">
+                <i class="bi bi-lightning-charge-fill me-1"></i> Predict {{ target_col }} Now
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Quick Test Profiles (specifically for Financial Credibility Dataset) -->
+{% if 'credit_score' in target_col %}
+<div class="card p-4 shadow-sm mb-4 border-info">
+    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-person-lines-fill text-primary me-2"></i>Quick Test Pre-Set Profiles:</h6>
+    <div class="row g-3">
+        <div class="col-md-4">
+            <div class="p-3 rounded border bg-light h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <strong class="text-success"><i class="bi bi-star-fill"></i> Prime Borrower Profile</strong>
+                    <p class="small text-muted mb-2 mt-1">Stable income, Category A employer, ₹1,80,000 salary, 0 bounces, high month-end balance.</p>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-success mt-2" onclick="loadPrimeProfile()">Load Prime Profile</button>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="p-3 rounded border bg-light h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <strong class="text-warning text-dark"><i class="bi bi-exclamation-triangle-fill"></i> Moderate Borrower Profile</strong>
+                    <p class="small text-muted mb-2 mt-1">Fluctuating income, Category B employer, ₹95,000 salary, 1 bounce, moderate debt.</p>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-warning text-dark mt-2" onclick="loadModerateProfile()">Load Moderate Profile</button>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="p-3 rounded border bg-light h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <strong class="text-danger"><i class="bi bi-x-circle-fill"></i> High Risk Profile</strong>
+                    <p class="small text-muted mb-2 mt-1">Unstable income, Unlisted employer, ₹45,000 salary, 3 bounces, gambling txns, high DTI.</p>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger mt-2" onclick="loadHighRiskProfile()">Load High Risk Profile</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+// JSON payload of median defaults
+const featureDefaults = {
+    {% for feat, meta in feature_meta.items %}
+        "{{ feat }}": "{{ meta.default }}",
+    {% endfor %}
+};
+
+function fillMedianValues() {
+    for (const [key, val] of Object.entries(featureDefaults)) {
+        const el = document.getElementById("input_" + key);
+        if (el) {
+            el.value = val;
+        }
+    }
+}
+
+function loadPrimeProfile() {
+    fillMedianValues();
+    setVal('income_stability', 'STABLE');
+    setVal('employer_category', 'Category A (MNC/Govt/PSU)');
+    setVal('average_usable_salary', 220000);
+    setVal('average_eligible_emi', 75000);
+    setVal('average_month_end_balance', 850000);
+    setVal('bounce_count', 0);
+    setVal('gambling_transaction_count', 0);
+    setVal('average_obligation_to_income_ratio', 25.0);
+    setVal('employment_tenure_years', 8.5);
+    document.getElementById('predictionForm').submit();
+}
+
+function loadModerateProfile() {
+    fillMedianValues();
+    setVal('income_stability', 'FLUCTUATING');
+    setVal('employer_category', 'Category B (Private Ltd)');
+    setVal('average_usable_salary', 110000);
+    setVal('average_eligible_emi', 55000);
+    setVal('average_month_end_balance', 85000);
+    setVal('bounce_count', 1);
+    setVal('average_obligation_to_income_ratio', 55.0);
+    document.getElementById('predictionForm').submit();
+}
+
+function loadHighRiskProfile() {
+    fillMedianValues();
+    setVal('income_stability', 'UNSTABLE');
+    setVal('employer_category', 'Unlisted');
+    setVal('average_usable_salary', 45000);
+    setVal('average_eligible_emi', 35000);
+    setVal('average_month_end_balance', 4500);
+    setVal('bounce_count', 3);
+    setVal('gambling_transaction_count', 2);
+    setVal('average_obligation_to_income_ratio', 88.0);
+    setVal('employment_tenure_years', 0.8);
+    document.getElementById('predictionForm').submit();
+}
+
+function setVal(id, val) {
+    const el = document.getElementById("input_" + id);
+    if (el) el.value = val;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,284 @@
+{% extends 'base.html' %}
+
+{% block title %}Visual Analytics & EDA - DataMining ML Studio{% endblock %}
+
+{% block content %}
+<!-- Stat Counters Row -->
+<div class="row g-3 mb-4">
+    <div class="col-md-2 col-sm-6">
+        <div class="stat-card">
+            <div class="stat-icon stat-icon-blue"><i class="bi bi-table"></i></div>
+            <div>
+                <div class="stat-value">{{ total_rows }}</div>
+                <div class="stat-label">Total Records</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 col-sm-6">
+        <div class="stat-card">
+            <div class="stat-icon stat-icon-purple"><i class="bi bi-layout-three-columns"></i></div>
+            <div>
+                <div class="stat-value">{{ total_cols }}</div>
+                <div class="stat-label">Attributes</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card">
+            <div class="stat-icon stat-icon-green"><i class="bi bi-123"></i></div>
+            <div>
+                <div class="stat-value">{{ numeric_cols|length }}</div>
+                <div class="stat-label">Numerical Features</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card">
+            <div class="stat-icon stat-icon-amber"><i class="bi bi-tags"></i></div>
+            <div>
+                <div class="stat-value">{{ categorical_cols|length }}</div>
+                <div class="stat-label">Categorical Features</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 col-sm-6">
+        <div class="stat-card">
+            <div class="stat-icon {% if total_missing > 0 %}stat-icon-amber{% else %}stat-icon-green{% endif %}">
+                <i class="bi bi-exclamation-diamond"></i>
+            </div>
+            <div>
+                <div class="stat-value">{{ total_missing }}</div>
+                <div class="stat-label">Null / Missing</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pipeline Configuration & Training Trigger Bar -->
+<div class="card p-4 mb-4 border-primary border-2 shadow-sm bg-white">
+    <form method="POST" action="{% url 'train' %}" id="trainForm">
+        {% csrf_token %}
+        <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label fw-bold text-dark small">
+                    <i class="bi bi-bullseye text-danger me-1"></i> Target Variable (What to Predict):
+                </label>
+                <select name="target_col" id="targetSelect" class="form-select fw-semibold" onchange="updateTarget(this.value)">
+                    {% for col in columns %}
+                        <option value="{{ col }}" {% if col == target_col %}selected{% endif %}>
+                            {{ col }} {% if col in numeric_cols %}(Numeric){% else %}(Categorical){% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label fw-bold text-dark small">
+                    <i class="bi bi-sliders text-primary me-1"></i> Problem Type:
+                </label>
+                <select name="problem_type" class="form-select">
+                    <option value="regression" {% if problem_type == 'regression' %}selected{% endif %}>Regression (Continuous)</option>
+                    <option value="classification" {% if problem_type == 'classification' %}selected{% endif %}>Classification (Discrete)</option>
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label fw-bold text-dark small">
+                    <i class="bi bi-tools text-secondary me-1"></i> Null Imputation:
+                </label>
+                <select name="imputation" class="form-select">
+                    <option value="median" selected>Median (Numeric) / Mode</option>
+                    <option value="mean">Mean (Numeric) / Mode</option>
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label fw-bold text-dark small">
+                    <i class="bi bi-symmetry-horizontal text-secondary me-1"></i> Outlier Treatment:
+                </label>
+                <select name="outlier_action" class="form-select">
+                    <option value="cap" selected>IQR Capping (Winsorize)</option>
+                    <option value="none">Keep Raw (No Capping)</option>
+                </select>
+            </div>
+
+            <div class="col-md-3 text-end">
+                <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold shadow-sm">
+                    <i class="bi bi-play-circle-fill me-1"></i> Run Pipeline & Train Models
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Visual Analytics Dashboard (Charts Grid) -->
+<h4 class="fw-bold text-dark mb-3"><i class="bi bi-graph-up-arrow text-primary me-2"></i>Visual Analytics Dashboard (Dynamic EDA)</h4>
+<div class="row g-4 mb-4">
+    <!-- Chart 1: Target Distribution -->
+    <div class="col-lg-6">
+        <div class="card h-100 p-3 shadow-sm">
+            <div class="d-flex justify-content-between align-items-center mb-2 px-2">
+                <h6 class="fw-bold text-dark mb-0"><i class="bi bi-bar-chart-fill text-primary me-1"></i> Target Distribution</h6>
+                <span class="badge bg-primary-subtle text-primary">{{ target_col }}</span>
+            </div>
+            <div class="chart-img-container">
+                {% if charts.target_distribution %}
+                    <img src="{{ charts.target_distribution }}" alt="Target Distribution">
+                {% else %}
+                    <div class="p-5 text-muted">No distribution plot available.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart 2: Correlation Heatmap -->
+    <div class="col-lg-6">
+        <div class="card h-100 p-3 shadow-sm">
+            <div class="d-flex justify-content-between align-items-center mb-2 px-2">
+                <h6 class="fw-bold text-dark mb-0"><i class="bi bi-grid-3x3-gap-fill text-primary me-1"></i> Feature Correlation Matrix</h6>
+                <span class="badge bg-secondary-subtle text-secondary">Pearson Correlation</span>
+            </div>
+            <div class="chart-img-container">
+                {% if charts.correlation_heatmap %}
+                    <img src="{{ charts.correlation_heatmap }}" alt="Correlation Heatmap">
+                {% else %}
+                    <div class="p-5 text-muted">Requires at least 2 numerical features for correlation.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart 3: Outlier Boxplots -->
+    <div class="col-lg-6">
+        <div class="card h-100 p-3 shadow-sm">
+            <div class="d-flex justify-content-between align-items-center mb-2 px-2">
+                <h6 class="fw-bold text-dark mb-0"><i class="bi bi-box-seam text-primary me-1"></i> Outlier Analysis (Boxplots)</h6>
+                <span class="badge bg-info-subtle text-info">IQR Whiskers</span>
+            </div>
+            <div class="chart-img-container">
+                {% if charts.boxplots %}
+                    <img src="{{ charts.boxplots }}" alt="Outlier Boxplots">
+                {% else %}
+                    <div class="p-5 text-muted">No numerical features available for boxplots.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart 4: Target Relationship / Scatter -->
+    <div class="col-lg-6">
+        <div class="card h-100 p-3 shadow-sm">
+            <div class="d-flex justify-content-between align-items-center mb-2 px-2">
+                <h6 class="fw-bold text-dark mb-0"><i class="bi bi-bezier2 text-primary me-1"></i> Feature vs Target Relationship</h6>
+                <span class="badge bg-success-subtle text-success">Trend & Density</span>
+            </div>
+            <div class="chart-img-container">
+                {% if charts.scatter_plot %}
+                    <img src="{{ charts.scatter_plot }}" alt="Feature vs Target">
+                {% else %}
+                    <div class="p-5 text-muted">Relationship plot not generated for current feature set.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs for Data Tables -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header-custom p-0 border-bottom">
+        <ul class="nav nav-tabs px-3 pt-2 border-0" id="edaTabs" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active fw-bold" id="preview-tab" data-bs-toggle="tab" data-bs-target="#preview" type="button">
+                    <i class="bi bi-table me-1"></i> Dataset Preview (Top 10 Rows)
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link fw-bold" id="summary-tab" data-bs-toggle="tab" data-bs-target="#summary" type="button">
+                    <i class="bi bi-calculator me-1"></i> Summary Statistics
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link fw-bold" id="missing-tab" data-bs-toggle="tab" data-bs-target="#missing" type="button">
+                    <i class="bi bi-exclamation-triangle me-1"></i> Missing Values Breakdown
+                </button>
+            </li>
+        </ul>
+    </div>
+    <div class="card-body p-3">
+        <div class="tab-content" id="edaTabContent">
+            <!-- Preview Tab -->
+            <div class="tab-pane fade show active" id="preview" role="tabpanel">
+                <div class="table-responsive">
+                    {{ preview_html|safe }}
+                </div>
+            </div>
+
+            <!-- Summary Tab -->
+            <div class="tab-pane fade" id="summary" role="tabpanel">
+                <div class="table-responsive">
+                    {{ summary_html|safe }}
+                </div>
+            </div>
+
+            <!-- Missing Values Tab -->
+            <div class="tab-pane fade" id="missing" role="tabpanel">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Feature / Column</th>
+                                <th>Data Type</th>
+                                <th>Missing Count</th>
+                                <th>Missing Percentage</th>
+                                <th>Imputation Plan</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in missing_data %}
+                            <tr>
+                                <td class="fw-bold">{{ item.column }}</td>
+                                <td><code>{{ item.dtype }}</code></td>
+                                <td>
+                                    {% if item.missing > 0 %}
+                                        <span class="badge bg-danger">{{ item.missing }}</span>
+                                    {% else %}
+                                        <span class="badge bg-success">0</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="progress flex-grow-1" style="height: 6px;">
+                                            <div class="progress-bar {% if item.missing_pct > 0 %}bg-danger{% else %}bg-success{% endif %}" style="width: {{ item.missing_pct }}%;"></div>
+                                        </div>
+                                        <small class="text-muted">{{ item.missing_pct }}%</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if item.missing > 0 %}
+                                        {% if item.column in numeric_cols %}
+                                            <span class="badge bg-light text-dark border">Median Imputation</span>
+                                        {% else %}
+                                            <span class="badge bg-light text-dark border">Mode Category Imputation</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-success small"><i class="bi bi-check-circle-fill"></i> Clean</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateTarget(val) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('target', val);
+    window.location.href = url.toString();
+}
+</script>
+{% endblock %}

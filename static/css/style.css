@@ -1,0 +1,243 @@
+:root {
+    --primary-color: #2563eb;
+    --primary-hover: #1d4ed8;
+    --secondary-color: #0ea5e9;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --danger-color: #ef4444;
+    --dark-bg: #0f172a;
+    --card-bg: #ffffff;
+    --border-color: #e2e8f0;
+    --text-muted: #64748b;
+}
+
+body {
+    background-color: #f8fafc;
+    font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    color: #1e293b;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Navbar */
+.navbar-brand-custom {
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.25rem;
+}
+
+.nav-pills .nav-link {
+    color: #64748b;
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 8px 16px;
+    transition: all 0.2s ease;
+}
+
+.nav-pills .nav-link:hover {
+    color: var(--primary-color);
+    background-color: #eff6ff;
+}
+
+.nav-pills .nav-link.active {
+    background-color: var(--primary-color);
+    color: #ffffff;
+    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+}
+
+/* Step Bar */
+.step-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 18px;
+    border-radius: 10px;
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    font-weight: 600;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.step-item.active {
+    background: #eff6ff;
+    border-color: #93c5fd;
+    color: var(--primary-color);
+}
+
+.step-item.completed {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+    color: #166534;
+}
+
+.step-number {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    background: #e2e8f0;
+    color: #475569;
+}
+
+.step-item.active .step-number {
+    background: var(--primary-color);
+    color: #fff;
+}
+
+.step-item.completed .step-number {
+    background: var(--success-color);
+    color: #fff;
+}
+
+/* Card Styling */
+.card {
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+    background-color: var(--card-bg);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.card:hover {
+    box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.08);
+}
+
+.card-header-custom {
+    background: #ffffff;
+    border-bottom: 1px solid var(--border-color);
+    padding: 14px 20px;
+    font-weight: 700;
+    font-size: 1.05rem;
+}
+
+/* Metric Stats Cards */
+.stat-card {
+    padding: 18px;
+    border-radius: 12px;
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+}
+
+.stat-icon-blue { background: #eff6ff; color: #2563eb; }
+.stat-icon-green { background: #f0fdf4; color: #16a34a; }
+.stat-icon-amber { background: #fffbeb; color: #d97706; }
+.stat-icon-purple { background: #faf5ff; color: #9333ea; }
+
+.stat-value {
+    font-size: 1.45rem;
+    font-weight: 800;
+    line-height: 1.2;
+    color: #0f172a;
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    color: #64748b;
+    font-weight: 500;
+}
+
+/* Drag & Drop Upload Zone */
+.dropzone-box {
+    border: 2px dashed #93c5fd;
+    border-radius: 16px;
+    padding: 40px 20px;
+    text-align: center;
+    background: #f8fafc;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.dropzone-box:hover {
+    background: #eff6ff;
+    border-color: var(--primary-color);
+}
+
+/* Prediction Result Banner */
+.prediction-banner {
+    border-radius: 16px;
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    color: #ffffff;
+    padding: 30px;
+    box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.3);
+}
+
+.credit-gauge-circle {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    border: 8px solid rgba(255, 255, 255, 0.15);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+.credit-gauge-circle.excellent { border-color: #10b981; }
+.credit-gauge-circle.good { border-color: #0ea5e9; }
+.credit-gauge-circle.fair { border-color: #f59e0b; }
+.credit-gauge-circle.poor { border-color: #ef4444; }
+
+/* Table enhancements */
+.table-responsive {
+    border-radius: 10px;
+    overflow-x: auto;
+}
+
+.table th {
+    background-color: #f8fafc;
+    font-weight: 600;
+    color: #475569;
+    font-size: 0.88rem;
+    border-top: none;
+}
+
+.table td {
+    font-size: 0.88rem;
+    color: #1e293b;
+}
+
+/* Chart Container */
+.chart-img-container {
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 8px;
+    text-align: center;
+}
+
+.chart-img-container img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+}
+
+footer {
+    margin-top: auto;
+    background: #ffffff;
+    border-top: 1px solid var(--border-color);
+    padding: 16px 0;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}

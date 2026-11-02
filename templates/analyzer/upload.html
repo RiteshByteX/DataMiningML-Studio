@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block title %}Upload Dataset - DataMining ML Studio{% endblock %}
+
+{% block content %}
+<div class="row g-4 align-items-stretch">
+    <!-- Hero / Introduction Column -->
+    <div class="col-lg-5">
+        <div class="card h-100 p-4 border-0 shadow-sm" style="background: linear-gradient(145deg, #1e3a8a 0%, #1e293b 100%); color: #fff;">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <span class="badge bg-primary px-3 py-2 text-uppercase fw-bold letter-spacing-1">Universal ML Pipeline</span>
+            </div>
+            <h2 class="fw-bold mb-3">End-to-End Data Mining & Machine Learning Platform</h2>
+            <p class="text-white-50 mb-4 leading-relaxed">
+                A generalized, dataset-agnostic Django web application that ingests <strong>any tabular dataset (.csv, .xlsx)</strong>, executes advanced data mining preprocessing, generates dynamic EDA analytics, trains optimized ML models, and provides real-time predictions.
+            </p>
+
+            <div class="mt-auto">
+                <h6 class="text-white fw-bold mb-3"><i class="bi bi-stars text-warning me-2"></i>Built-in Automated Pipeline Capabilities:</h6>
+                <div class="d-flex flex-column gap-2 small text-white-50">
+                    <div><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Missing Value Imputation:</strong> Mean / Median / Mode detection and handling.</div>
+                    <div><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Outlier Treatment:</strong> IQR / Z-Score clipping & bounds analysis.</div>
+                    <div><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Data Transformation:</strong> StandardScaler / MinMaxScaler & Label Encoding.</div>
+                    <div><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Auto Task Detection:</strong> Regression vs Classification auto-switching.</div>
+                    <div><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Interactive Inference:</strong> Real-time form with dynamic fields.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload & Sample Selection Column -->
+    <div class="col-lg-7">
+        <div class="d-flex flex-column gap-4 h-100">
+            <!-- Option 1: Load Sample Dataset Card -->
+            <div class="card p-4 border-primary border-2 shadow-sm">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <span class="badge bg-success-subtle text-success fw-bold px-2 py-1 mb-2">
+                            <i class="bi bi-lightning-charge-fill"></i> Instant 1-Click Evaluation
+                        </span>
+                        <h4 class="fw-bold mb-1">Load Project Dataset (Financial Credibility & Loan Decision)</h4>
+                        <p class="text-muted small mb-3">
+                            Preloaded dataset with <strong>10,000 real records</strong> containing financial stability, income, salary, EMI, and <code>credit_score</code> target.
+                        </p>
+                    </div>
+                </div>
+                <div class="bg-light p-3 rounded-3 mb-3 border">
+                    <div class="row g-2 text-muted small">
+                        <div class="col-sm-4"><strong>Rows:</strong> 10,000 records</div>
+                        <div class="col-sm-4"><strong>Features:</strong> 15 attributes</div>
+                        <div class="col-sm-4"><strong>Target:</strong> <code>credit_score</code> (300-900)</div>
+                    </div>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'load_sample' %}" class="btn btn-primary px-4 py-2 fw-semibold">
+                        <i class="bi bi-box-arrow-in-right me-1"></i> Load Financial Credibility Dataset & Proceed
+                    </a>
+                </div>
+            </div>
+
+            <!-- Option 2: Upload Custom Dataset Card -->
+            <div class="card p-4 shadow-sm flex-grow-1">
+                <div class="mb-3">
+                    <span class="badge bg-secondary-subtle text-secondary fw-bold px-2 py-1 mb-2">
+                        <i class="bi bi-upload"></i> Custom Dataset
+                    </span>
+                    <h4 class="fw-bold mb-1">Upload Any CSV or Excel Dataset</h4>
+                    <p class="text-muted small mb-0">
+                        Works seamlessly with any tabular dataset (e.g. Loan Approval, Customer Churn, House Prices, Heart Disease, etc.).
+                    </p>
+                </div>
+
+                <form method="POST" enctype="multipart/form-data" action="{% url 'upload' %}">
+                    {% csrf_token %}
+                    <div class="dropzone-box mb-3" onclick="document.getElementById('fileInput').click();">
+                        <i class="bi bi-file-earmark-arrow-up display-5 text-primary mb-2"></i>
+                        <h6 class="fw-bold mb-1" id="dropzoneText">Click or Drag & Drop .CSV or .XLSX file here</h6>
+                        <span class="text-muted small">Supports tabular datasets up to 25 MB</span>
+                        <input type="file" name="dataset_file" id="fileInput" class="d-none" accept=".csv, .xlsx, .xls" onchange="updateFileName(this)">
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span id="fileNameDisplay" class="small text-muted font-monospace"></span>
+                        <button type="submit" class="btn btn-dark px-4 py-2 fw-semibold">
+                            <i class="bi bi-gear-fill me-1"></i> Ingest & Inspect Dataset
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateFileName(input) {
+    if (input.files && input.files[0]) {
+        document.getElementById('fileNameDisplay').textContent = "Selected: " + input.files[0].name;
+        document.getElementById('dropzoneText').textContent = input.files[0].name;
+    }
+}
+</script>
+{% endblock %}

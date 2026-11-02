@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Data Mining & Machine Learning Pipeline Studio{% endblock %}</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <!-- Custom Style -->
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <!-- Top Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark py-2 shadow-sm">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand navbar-brand-custom text-white" href="{% url 'upload' %}">
+                <i class="bi bi-cpu-fill text-primary"></i>
+                <span>DataMining<span class="text-primary">ML</span> Studio</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarContent">
+                <ul class="navbar-nav ms-auto align-items-center gap-1">
+                    <li class="nav-item">
+                        <a class="nav-link text-white-50 px-3 py-2 rounded {% if request.resolver_match.url_name == 'upload' %}active text-white bg-primary{% endif %}" href="{% url 'upload' %}">
+                            <i class="bi bi-cloud-arrow-up me-1"></i> 1. Ingestion
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white-50 px-3 py-2 rounded {% if request.resolver_match.url_name == 'eda' %}active text-white bg-primary{% endif %}" href="{% url 'eda' %}">
+                            <i class="bi bi-bar-chart-line me-1"></i> 2. Analytics (EDA)
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white-50 px-3 py-2 rounded {% if request.resolver_match.url_name == 'train' %}active text-white bg-primary{% endif %}" href="{% url 'train' %}">
+                            <i class="bi bi-gear-wide-connected me-1"></i> 3. Train & Evaluate
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white-50 px-3 py-2 rounded {% if request.resolver_match.url_name == 'predict' %}active text-white bg-primary{% endif %}" href="{% url 'predict' %}">
+                            <i class="bi bi-lightning-charge-fill me-1"></i> 4. Live Prediction
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sub-Header Breadcrumb / Flow -->
+    <div class="bg-white border-bottom py-2 shadow-xs mb-3">
+        <div class="container-fluid px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <a href="{% url 'upload' %}" class="step-item {% if request.resolver_match.url_name == 'upload' %}active{% else %}completed{% endif %}">
+                    <span class="step-number">1</span> Upload & Load
+                </a>
+                <i class="bi bi-chevron-right text-muted small"></i>
+                <a href="{% url 'eda' %}" class="step-item {% if request.resolver_match.url_name == 'eda' %}active{% elif request.resolver_match.url_name in 'train predict' %}completed{% endif %}">
+                    <span class="step-number">2</span> Preprocessing & EDA
+                </a>
+                <i class="bi bi-chevron-right text-muted small"></i>
+                <a href="{% url 'train' %}" class="step-item {% if request.resolver_match.url_name == 'train' %}active{% elif request.resolver_match.url_name == 'predict' %}completed{% endif %}">
+                    <span class="step-number">3</span> ML Models
+                </a>
+                <i class="bi bi-chevron-right text-muted small"></i>
+                <a href="{% url 'predict' %}" class="step-item {% if request.resolver_match.url_name == 'predict' %}active{% endif %}">
+                    <span class="step-number">4</span> Prediction Studio
+                </a>
+            </div>
+            {% if request.session.dataset_name %}
+            <div class="badge bg-light text-dark border px-3 py-2 font-monospace">
+                <i class="bi bi-file-earmark-spreadsheet text-success me-1"></i> {{ request.session.dataset_name }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Alert Messages Container -->
+    <div class="container-fluid px-4 mb-2">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show d-flex align-items-center" role="alert">
+                    <i class="bi bi-info-circle-fill me-2 fs-5"></i>
+                    <div>{{ message }}</div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="container-fluid px-4 mb-5">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container-fluid px-4 d-flex flex-wrap justify-content-between align-items-center">
+            <div>
+                <strong>Data Mining & ML Pipeline Web Application</strong> — Django Full Stack
+            </div>
+            <div>
+                <span class="badge bg-secondary-subtle text-secondary me-2">Dataset Agnostic</span>
+                <span class="badge bg-primary-subtle text-primary">Preloaded: Financial Credibility Dataset (10K Rows)</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
